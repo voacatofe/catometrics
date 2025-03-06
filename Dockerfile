@@ -1,23 +1,27 @@
 # Estágio de construção
-FROM node:18-alpine AS builder
+FROM node:16-alpine AS builder
 WORKDIR /app
+
+# Instalar dependências necessárias
+RUN apk add --no-cache libc6-compat python3 make g++
 
 # Copiar arquivos de dependências
 COPY package.json package-lock.json ./
-# Usar npm install em vez de npm ci para maior compatibilidade
-RUN npm install
+# Instalação forçada com maior timeout e sem cache
+RUN npm install --verbose --no-cache --force --legacy-peer-deps --network-timeout 100000
 
 # Copiar o restante do código fonte
 COPY . .
 
-# Gerar Prisma Client
-RUN npx prisma generate
+# Instalar Prisma globalmente e gerar cliente
+RUN npm install -g prisma
+RUN prisma generate
 
 # Construir o aplicativo
 RUN npm run build
 
 # Estágio de produção
-FROM node:18-alpine AS runner
+FROM node:16-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

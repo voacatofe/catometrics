@@ -1,12 +1,12 @@
-FROM node:16
+FROM node:18
 
 WORKDIR /app
 
 # Copiar arquivos de dependências
 COPY package.json package-lock.json ./
 
-# Instalar dependências com Yarn
-RUN yarn install
+# Instalar dependências com npm em vez de yarn
+RUN npm ci
 
 # Copiar o resto do código
 COPY . .
@@ -15,10 +15,10 @@ COPY . .
 RUN npx prisma generate
 
 # Construir o aplicativo
-RUN yarn build
+RUN npm run build
 
 # Expor a porta 3000
 EXPOSE 3000
 
 # Comando para iniciar a aplicação
-CMD ["yarn", "start"] 
+CMD ["npm", "start"] 

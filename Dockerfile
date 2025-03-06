@@ -22,5 +22,5 @@ RUN npm run build
 # Expor a porta 3000
 EXPOSE 3000
 
-# Comando para iniciar a aplicação
-CMD ["npm", "start"] 
+# Comando para iniciar a aplicação com migrações
+CMD npx prisma migrate deploy && npm start 

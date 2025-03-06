@@ -12,11 +12,15 @@ CatoMetrics é uma plataforma SaaS que oferece dashboards de métricas de mídia
 
 ## Funcionalidades
 
-- Autenticação completa (login, registro, recuperação de senha)
-- Dashboard de métricas via embed do Looker Studio
-- Gerenciamento de times (criar, editar, convidar membros)
-- Controle de permissões baseado em papéis (admin, owner, member, viewer)
-- Interface responsiva e moderna
+- **Autenticação completa** (login, registro, recuperação de senha)
+- **Dashboard por time** - Cada time pode ter seu próprio dashboard do Looker Studio
+- **Gerenciamento de times** (criar, editar, convidar membros)
+- **Controle de permissões** baseado em papéis (admin, owner, member, viewer)
+- **Interface responsiva e moderna**
+
+## Como Funciona
+
+O CatoMetrics permite que cada time tenha seu próprio dashboard do Looker Studio. Os administradores de cada time podem definir a URL de incorporação específica para o dashboard do time. Os membros do time só terão acesso ao dashboard do time ao qual pertencem.
 
 ## Configuração do Ambiente
 
@@ -24,7 +28,7 @@ CatoMetrics é uma plataforma SaaS que oferece dashboards de métricas de mídia
 
 - Node.js 18+
 - PostgreSQL
-- Conta no Looker Studio (para o embed)
+- Conta no Looker Studio (para os embeds)
 
 ### Variáveis de Ambiente
 
@@ -38,15 +42,12 @@ NEXTAUTH_SECRET=seu_secret_muito_seguro_aqui
 # Database
 DATABASE_URL="postgresql://postgres:4ffffa13f9d37b8f09@147.139.1.63:5432/catometrics_db-catometrics?schema=public"
 
-# Email
+# Email (para convites e recuperação de senha)
 EMAIL_SERVER_USER=usuario@email.com
 EMAIL_SERVER_PASSWORD=senha_email_aqui
 EMAIL_SERVER_HOST=smtp.example.com
 EMAIL_SERVER_PORT=587
 EMAIL_FROM=noreply@catometrics.com
-
-# Looker Studio Embed URL
-LOOKER_STUDIO_URL=https://lookerstudio.google.com/embed/seu_dashboard_id
 ```
 
 ### Instalação
@@ -81,6 +82,8 @@ catometrics/
 ├── app/                    # Rotas e páginas (Next.js App Router)
 │   ├── (auth)/             # Rotas de autenticação
 │   ├── (dashboard)/        # Rotas protegidas do dashboard
+│   │   ├── dashboard/[teamId]/ # Dashboard específico por time
+│   │   └── teams/          # Gerenciamento de times
 │   └── api/                # Rotas da API
 ├── components/             # Componentes React
 │   ├── ui/                 # Componentes de UI reutilizáveis

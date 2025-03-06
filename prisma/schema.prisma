@@ -67,11 +67,12 @@ model VerificationToken {
 
 // Modelo de Time
 model Team {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  name         String
+  description  String?
+  dashboardUrl String?   // URL do dashboard do Looker Studio específico para este time
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   
   ownerId     String
   owner       User      @relation("TeamOwner", fields: [ownerId], references: [id])

@@ -22,10 +22,5 @@ RUN npm run build
 # Expor a porta 3000
 EXPOSE 3000
 
-# Configurar variáveis de ambiente essenciais caso não sejam fornecidas
-ENV NODE_ENV=production
-ENV NEXTAUTH_URL=https://catometrics.com.br
-ENV NEXTAUTH_SECRET=umValorAleatorioMuitoSeguro123456
-
 # Comando para iniciar a aplicação com migrações
 CMD npx prisma migrate deploy && npm start 

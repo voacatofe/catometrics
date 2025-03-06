@@ -28,6 +28,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
 // Modelo para sessões de usuário
@@ -37,6 +38,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
 }
 
 // Modelo de Usuário
@@ -54,6 +57,8 @@ model User {
   sessions    Session[]
   teamMembers TeamMember[]
   ownedTeams  Team[]      @relation("TeamOwner")
+  
+  @@map("users")
 }
 
 // Modelo para reset de senha
@@ -63,6 +68,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 // Modelo de Time
@@ -78,6 +84,8 @@ model Team {
   owner       User      @relation("TeamOwner", fields: [ownerId], references: [id])
   members     TeamMember[]
   invitations TeamInvitation[]
+  
+  @@map("teams")
 }
 
 // Modelo de relacionamento usuário-time com role
@@ -93,6 +101,7 @@ model TeamMember {
   team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
   
   @@unique([userId, teamId])
+  @@map("team_members")
 }
 
 // Modelo para convites de time
@@ -108,6 +117,43 @@ model TeamInvitation {
   team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
   
   @@index([email, teamId])
+  @@map("team_invitations")
+}
+
+// Adicionando modelos para as outras tabelas encontradas no banco
+model Dashboard {
+  id        String    @id @default(cuid())
+  name      String
+  url       String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  permissions DashboardPermission[]
+  
+  @@map("dashboards")
+}
+
+model DashboardPermission {
+  id          String    @id @default(cuid())
+  userId      String?
+  teamId      String?
+  permission  String
+  createdAt   DateTime  @default(now())
+  
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  dashboardId String
+  
+  @@map("dashboard_permissions")
+}
+
+model ActivityLog {
+  id        String    @id @default(cuid())
+  userId    String?
+  action    String
+  details   String?
+  createdAt DateTime  @default(now())
+  
+  @@map("activity_logs")
 }
 
 // Enumeração de permissões

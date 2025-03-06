@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Copiar arquivos de dependências
 COPY package.json package-lock.json ./
-RUN npm ci
+# Usar npm install em vez de npm ci para maior compatibilidade
+RUN npm install
 
 # Copiar o restante do código fonte
 COPY . .
@@ -19,7 +20,7 @@ RUN npm run build
 FROM node:18-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 # Copiar conteúdo necessário do estágio de construção
 COPY --from=builder /app/next.config.js ./

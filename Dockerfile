@@ -13,8 +13,8 @@ RUN npm ci
 # Copiar o resto do código
 COPY . .
 
-# Não precisamos executar o prisma generate novamente, pois já foi executado durante o npm ci
-# RUN npx prisma generate
+# Gerar o cliente Prisma
+RUN npx prisma generate
 
 # Construir o aplicativo
 RUN npm run build
@@ -22,5 +22,5 @@ RUN npm run build
 # Expor a porta 3000
 EXPOSE 3000
 
-# Comando para iniciar a aplicação com migrações
-CMD npx prisma migrate deploy && npm start 
+# Comando para iniciar a aplicação - formato array mais confiável
+CMD ["npm", "start"] 

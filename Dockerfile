@@ -1,12 +1,9 @@
-FROM node:16 as base
+FROM node:16
 
 WORKDIR /app
 
-# Instalar o Yarn globalmente
-RUN npm install -g yarn
-
 # Copiar arquivos de dependências
-COPY package.json yarn.lock* ./
+COPY package.json package-lock.json ./
 
 # Instalar dependências com Yarn
 RUN yarn install

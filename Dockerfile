@@ -1,41 +1,27 @@
-# Estágio de construção
-FROM node:16-alpine AS builder
+FROM node:16 as base
+
 WORKDIR /app
 
-# Instalar dependências necessárias
-RUN apk add --no-cache libc6-compat python3 make g++
+# Instalar o Yarn globalmente
+RUN npm install -g yarn
 
 # Copiar arquivos de dependências
-COPY package.json package-lock.json ./
-# Instalação forçada com maior timeout e sem cache
-RUN npm install --verbose --no-cache --force --legacy-peer-deps --network-timeout 100000
+COPY package.json yarn.lock* ./
 
-# Copiar o restante do código fonte
+# Instalar dependências com Yarn
+RUN yarn install
+
+# Copiar o resto do código
 COPY . .
 
-# Instalar Prisma globalmente e gerar cliente
-RUN npm install -g prisma
-RUN prisma generate
+# Gerar o cliente Prisma
+RUN npx prisma generate
 
 # Construir o aplicativo
-RUN npm run build
+RUN yarn build
 
-# Estágio de produção
-FROM node:16-alpine AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production
-
-# Copiar conteúdo necessário do estágio de construção
-COPY --from=builder /app/next.config.js ./
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-
-# Expor a porta usada pelo Next.js
+# Expor a porta 3000
 EXPOSE 3000
 
-# Comando para iniciar o servidor
-CMD ["npm", "start"] 
+# Comando para iniciar a aplicação
+CMD ["yarn", "start"] 

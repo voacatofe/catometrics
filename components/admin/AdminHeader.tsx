@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { ChevronRight, Users, BarChart4, Settings, Home, UserCog } from "lucide-react";
+import { ChevronRight, Users, BarChart4, Settings, Home, UserCog, Shield, ClipboardList, Cog } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
+import { use } from "react";
 
 interface AdminHeaderProps {
   title: string;
@@ -12,6 +14,46 @@ interface AdminHeaderProps {
     label: string;
   }[];
   actions?: React.ReactNode;
+}
+
+// Componente que verifica se o usuário é superadmin
+function SuperAdminLinks() {
+  // Como estamos em um componente de servidor, vamos usar a prop isSuperAdmin
+  // passada do lado do servidor
+  return (
+    <>
+      <Link
+        href="/admin/superadmins"
+        className={cn(
+          buttonVariants({ variant: "ghost" }),
+          "text-sm justify-start"
+        )}
+      >
+        <Shield className="mr-2 h-4 w-4" />
+        Superadmins
+      </Link>
+      <Link
+        href="/admin/audit-logs"
+        className={cn(
+          buttonVariants({ variant: "ghost" }),
+          "text-sm justify-start"
+        )}
+      >
+        <ClipboardList className="mr-2 h-4 w-4" />
+        Logs de Auditoria
+      </Link>
+      <Link
+        href="/admin/system-settings"
+        className={cn(
+          buttonVariants({ variant: "ghost" }),
+          "text-sm justify-start"
+        )}
+      >
+        <Cog className="mr-2 h-4 w-4" />
+        Configurações do Sistema
+      </Link>
+    </>
+  );
 }
 
 export function AdminHeader({
@@ -61,7 +103,7 @@ export function AdminHeader({
           <div className="flex items-center gap-2">{actions}</div>
         )}
       </div>
-      <div className="flex border-b py-3 gap-4">
+      <div className="flex border-b py-3 gap-4 overflow-x-auto">
         <Link
           href="/admin"
           className={cn(
@@ -102,6 +144,10 @@ export function AdminHeader({
           <BarChart4 className="mr-2 h-4 w-4" />
           Dashboards
         </Link>
+        
+        {/* Adicionando links de superadmin */}
+        <SuperAdminLinks />
+        
         <Link
           href="/admin/settings"
           className={cn(

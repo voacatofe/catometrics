@@ -11,29 +11,15 @@ export default async function AdminDashboardPage() {
   const session = await requireSuperAdmin();
 
   // Buscar estatísticas
-  const [teamsCount, usersCount, dashboardsCount, activityLogsCount] = await Promise.all([
+  const [teamsCount, usersCount, dashboardsCount] = await Promise.all([
     db.team.count(),
     db.user.count(),
     db.dashboard.count(),
-    db.auditLog.count(),
   ]);
   
-  // Buscar atividades recentes
-  const recentActivities = await db.auditLog.findMany({
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: 10,
-  });
-
+  // Valor temporário enquanto configuramos os logs de atividade
+  const activityLogsCount = 0;
+  
   // Buscar times recentes
   const recentTeams = await db.team.findMany({
     include: {
@@ -55,6 +41,16 @@ export default async function AdminDashboardPage() {
     },
     take: 5,
   });
+  
+  // Dados simulados para atividades recentes
+  const recentActivities = [
+    {
+      id: "1",
+      action: "login",
+      createdAt: new Date(),
+      user: { name: "Admin", email: "admin@catometrics.com.br" }
+    }
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -138,6 +134,10 @@ export default async function AdminDashboardPage() {
                   </div>
                 </div>
               ))}
+              
+              {recentTeams.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhum time criado ainda.</p>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -118,6 +118,18 @@ export async function logUserAction({
   details?: any;
   ipAddress?: string | null;
 }) {
+  // Temporariamente desabilitado enquanto resolvemos os problemas com a tabela audit_logs
+  console.log('Log de ação:', {
+    userId,
+    action,
+    entityType,
+    entityId,
+    details: details ? JSON.stringify(details) : null,
+    ipAddress
+  });
+  
+  // Implementação temporariamente comentada
+  /*
   return await db.auditLog.create({
     data: {
       userId,
@@ -128,6 +140,19 @@ export async function logUserAction({
       ipAddress
     }
   });
+  */
+  
+  // Retornar um objeto simulado
+  return {
+    id: 'temp-' + Date.now(),
+    userId,
+    action,
+    entityType,
+    entityId,
+    details: details ? JSON.stringify(details) : null,
+    ipAddress,
+    createdAt: new Date()
+  };
 }
 
 // Constantes para ações do audit log

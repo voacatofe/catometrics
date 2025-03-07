@@ -5,7 +5,6 @@ const nextConfig = {
   poweredByHeader: false,
   env: {
     APP_NAME: 'CatoMetrics',
-    NODE_ENV: process.env.NODE_ENV,
   },
   onDemandEntries: {
     // Controla quanto tempo as páginas em memoria

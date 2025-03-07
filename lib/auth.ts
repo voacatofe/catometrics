@@ -118,31 +118,18 @@ export async function logUserAction({
   details?: any;
   ipAddress?: string | null;
 }) {
-  // Temporariamente desabilitado enquanto resolvemos os problemas com a tabela audit_logs
-  console.log('Log de ação:', {
+  // Temporariamente apenas logando no console
+  console.log('[Audit Log]', {
     userId,
     action,
     entityType,
     entityId,
     details: details ? JSON.stringify(details) : null,
-    ipAddress
+    ipAddress,
+    timestamp: new Date().toISOString()
   });
   
-  // Implementação temporariamente comentada
-  /*
-  return await db.auditLog.create({
-    data: {
-      userId,
-      action,
-      entityType,
-      entityId,
-      details: details ? JSON.stringify(details) : null,
-      ipAddress
-    }
-  });
-  */
-  
-  // Retornar um objeto simulado
+  // Retornando um objeto simulado
   return {
     id: 'temp-' + Date.now(),
     userId,

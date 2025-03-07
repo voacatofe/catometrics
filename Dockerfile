@@ -12,6 +12,9 @@ RUN npm ci
 # Copiar o resto do código
 COPY . .
 
+# Criar diretório public se não existir
+RUN mkdir -p public
+
 # Gerar o cliente Prisma
 RUN npx prisma generate
 
@@ -23,13 +26,15 @@ FROM node:18-slim AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV PORT 3000
+ENV NODE_ENV=production
+ENV PORT=3000
 
 # Copiar arquivos necessários do estágio anterior
 COPY --from=builder /app/next.config.js ./
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
+
+# Criar diretório public no destino para evitar erros
+RUN mkdir -p public
 
 # Copiar o diretório .next gerado
 COPY --from=builder /app/.next/standalone ./

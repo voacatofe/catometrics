@@ -5,12 +5,18 @@ const nextConfig = {
   poweredByHeader: false,
   env: {
     APP_NAME: 'CatoMetrics',
+    HOSTNAME: '0.0.0.0',
+    PORT: process.env.PORT || '3000',
   },
   images: {
     domains: ['lh3.googleusercontent.com', 'avatars.githubusercontent.com'],
   },
-  // Configuração para permitir deploy com suporte a Server Components e API Routes
+  // Configuração completa para output: standalone
   output: 'standalone',
+  // Adicionar configuração para standalone em ambientes de produção
+  experimental: {
+    outputFileTracingRoot: process.cwd(),
+  },
   // Desabilitar otimizações que estão causando erros
   optimizeFonts: false,
   // Ignorar erros durante o build para garantir o deploy

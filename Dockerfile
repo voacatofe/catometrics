@@ -22,14 +22,19 @@ RUN npx prisma generate
 # Construir o aplicativo
 RUN npm run build
 
-# Configuração para output: standalone
-# Copiar os arquivos necessários para a pasta standalone
-RUN cp -R .next/standalone/* .
-RUN cp -R .next/static .next/standalone/.next/
-RUN mkdir -p public && cp -R public .next/standalone/
+# Preparar para produção - abordagem mais direta para evitar problemas
+WORKDIR /app
+
+# Copiar o script de inicialização
+COPY start.js .
+
+# Garantir que NODE_ENV esteja configurado como production
+ENV NODE_ENV production
+ENV PORT 3000
+ENV HOSTNAME 0.0.0.0
 
 # Expor a porta 3000
 EXPOSE 3000
 
-# Comando para iniciar a aplicação com a configuração standalone
-CMD ["node", "server.js"] 
+# Comando para iniciar usando nosso script personalizado
+CMD ["node", "start.js"] 

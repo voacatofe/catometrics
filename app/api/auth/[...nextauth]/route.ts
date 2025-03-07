@@ -4,6 +4,7 @@ import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 import { db } from "@/lib/db";
+import { recordUserLogin, logUserAction, AUDIT_ACTIONS } from "@/lib/auth";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
@@ -37,16 +38,38 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // Verificar se o usuário está ativo
+        if (!user.isActive) {
+          throw new Error("Conta desativada. Entre em contato com o administrador.");
+        }
+
         const isPasswordValid = await compare(credentials.password, user.password);
 
         if (!isPasswordValid) {
           return null;
         }
 
+        // Registrar login bem-sucedido
+        await recordUserLogin(user.id);
+        
+        // Registrar ação no audit log
+        try {
+          await logUserAction({
+            userId: user.id,
+            action: AUDIT_ACTIONS.LOGIN,
+            entityType: 'user',
+            entityId: user.id,
+            details: { email: user.email }
+          });
+        } catch (error) {
+          console.error("Erro ao registrar login no audit log:", error);
+        }
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
+          isSuperAdmin: user.isSuperAdmin
         };
       },
     }),
@@ -54,31 +77,37 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ token, session }) {
       if (token) {
-        session.user.id = token.id;
-        session.user.name = token.name;
-        session.user.email = token.email;
+        session.user.id = token.id as string;
+        session.user.name = token.name as string | null;
+        session.user.email = token.email as string | null;
+        session.user.isSuperAdmin = Boolean(token.isSuperAdmin);
       }
 
       return session;
     },
     async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.isSuperAdmin = user.isSuperAdmin || false;
+        return token;
+      }
+
       const dbUser = await db.user.findFirst({
         where: {
-          email: token.email,
+          email: token.email as string,
         },
       });
 
       if (!dbUser) {
-        if (user) {
-          token.id = user.id;
-        }
         return token;
       }
 
       return {
+        ...token,
         id: dbUser.id,
         name: dbUser.name,
         email: dbUser.email,
+        isSuperAdmin: dbUser.isSuperAdmin
       };
     },
   },

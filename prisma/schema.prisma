@@ -52,11 +52,19 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  // Campo para identificar superadministradores
+  isSuperAdmin  Boolean   @default(false)
+  // Campo para rastrear a última vez que o usuário fez login
+  lastLogin     DateTime?
+  // Status do usuário
+  isActive      Boolean   @default(true)
 
   accounts    Account[]
   sessions    Session[]
   teamMembers TeamMember[]
   ownedTeams  Team[]      @relation("TeamOwner")
+  invitations TeamInvitation[] @relation("SentInvitations")
+  auditLogs   AuditLog[]  @relation("UserActions")
   
   @@map("users")
 }
@@ -76,14 +84,19 @@ model Team {
   id           String    @id @default(cuid())
   name         String
   description  String?
-  dashboardUrl String?   // URL do dashboard do Looker Studio específico para este time
+  // Removendo o dashboardUrl direto aqui, pois teremos múltiplos dashboards
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  // Informações financeiras do time
+  billingStatus String?  // ex: 'active', 'trial', 'suspended'
+  billingCycle  String?  // ex: 'monthly', 'annual'
+  nextBillingDate DateTime?
   
   ownerId     String
   owner       User      @relation("TeamOwner", fields: [ownerId], references: [id])
   members     TeamMember[]
   invitations TeamInvitation[]
+  dashboards  Dashboard[] // Um time pode ter múltiplos dashboards
   
   @@map("teams")
 }
@@ -91,7 +104,7 @@ model Team {
 // Modelo de relacionamento usuário-time com role
 model TeamMember {
   id        String    @id @default(cuid())
-  role      Role      @default(MEMBER)
+  role      Role      @default(MEMBER) // Agora usando o enum atualizado
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   
@@ -112,23 +125,38 @@ model TeamInvitation {
   token     String    @unique
   expires   DateTime
   createdAt DateTime  @default(now())
+  status    InvitationStatus @default(PENDING)
   
   teamId    String
   team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  // Quem enviou o convite
+  inviterId String
+  inviter   User      @relation("SentInvitations", fields: [inviterId], references: [id])
   
   @@index([email, teamId])
   @@map("team_invitations")
 }
 
-// Adicionando modelos para as outras tabelas encontradas no banco
+// Modelo de Dashboard atualizado
 model Dashboard {
-  id        String    @id @default(cuid())
-  name      String
-  url       String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  url         String    // URL de embed do Looker Studio
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   
+  // Relação com o time
+  teamId      String
+  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  // Permissões agora com tabela própria
   permissions DashboardPermission[]
+  
+  // Log de visualizações
+  viewLogs    DashboardViewLog[]
   
   @@map("dashboards")
 }
@@ -136,30 +164,58 @@ model Dashboard {
 model DashboardPermission {
   id          String    @id @default(cuid())
   userId      String?
-  teamId      String?
+  teamId      String
+  dashboardId String
   permission  String
   createdAt   DateTime  @default(now())
   
   dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-  dashboardId String
   
   @@map("dashboard_permissions")
 }
 
-model ActivityLog {
-  id        String    @id @default(cuid())
-  userId    String?
-  action    String
-  details   String?
-  createdAt DateTime  @default(now())
+// Novo modelo para rastrear visualizações de dashboard
+model DashboardViewLog {
+  id          String    @id @default(cuid())
+  dashboardId String
+  userId      String?
+  teamId      String?
+  viewedAt    DateTime  @default(now())
+  ipAddress   String?
+  userAgent   String?
   
-  @@map("activity_logs")
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  
+  @@map("dashboard_view_logs")
 }
 
-// Enumeração de permissões
+// Registro de ações (audit log)
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("UserActions", fields: [userId], references: [id])
+  action      String
+  entityType  String    // Por exemplo: 'team', 'user', 'dashboard'
+  entityId    String?   // ID da entidade afetada
+  details     String?   // Detalhes adicionais em JSON
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+  
+  @@map("audit_logs")
+}
+
+// Status de convite
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+// Enum de papéis atualizado
 enum Role {
+  SUPERADMIN
   ADMIN
-  OWNER
   MEMBER
   VIEWER
 } 

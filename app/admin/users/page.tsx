@@ -17,7 +17,7 @@ interface UserWithDetails {
 export default async function AdminUsersPage() {
   // Proteção de rota - apenas superadmin
   const session = await requireSuperAdmin();
-
+  
   // Buscar todos os usuários
   const users = await db.user.findMany({
     select: {
@@ -34,6 +34,16 @@ export default async function AdminUsersPage() {
     },
   });
 
+  // Função para formatar data
+  const formatDate = (date: Date | null) => {
+    if (!date) return "Nunca";
+    try {
+      return new Date(date).toLocaleDateString('pt-BR');
+    } catch (e) {
+      return 'Data inválida';
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <AdminHeader title="Gerenciamento de Usuários" />
@@ -45,34 +55,76 @@ export default async function AdminUsersPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {users.map((user: UserWithDetails) => (
-              <div key={user.id} className="flex items-center justify-between p-4 border rounded-md">
-                <div>
-                  <h3 className="font-medium">{user.name || user.email}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {user.email}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4 text-sm">
-                  {user.isSuperAdmin && (
-                    <span className="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">
-                      Superadmin
-                    </span>
-                  )}
-                  {!user.isActive && (
-                    <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
-                      Inativo
-                    </span>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    Criado em: {new Date(user.createdAt).toLocaleDateString('pt-BR')}
-                  </span>
-                </div>
+            {users.length > 0 ? (
+              <div className="border rounded-md overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Usuário
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tipo
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Último Login
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Data de Criação
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users.map((user: UserWithDetails) => (
+                      <tr key={user.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.name || 'Sem nome'}
+                              </div>
+                              <div className="text-sm text-gray-500">{user.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {user.isActive ? (
+                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                              Ativo
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                              Inativo
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {user.isSuperAdmin ? (
+                            <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
+                              Super Admin
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                              Usuário
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(user.lastLogin)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(user.createdAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
-
-            {users.length === 0 && (
-              <p className="text-muted-foreground">Nenhum usuário cadastrado ainda.</p>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">Nenhum usuário cadastrado ainda.</p>
             )}
           </div>
         </CardContent>

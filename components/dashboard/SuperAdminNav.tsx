@@ -29,16 +29,17 @@ export function SuperAdminNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
-  const [open, setOpen] = useState(false);
-  const [teams, setTeams] = useState<ITeam[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedTeam, setSelectedTeam] = useState<ITeam | null>(null);
   
-  // Verificar se o usuário é superadmin
+  // Verificar se o usuário é superadmin (MOVIDO PARA ANTES DOS OUTROS HOOKS)
   const isSuperAdmin = session?.user?.isSuperAdmin;
   
   // Se não for superadmin, não renderizar o componente
   if (!isSuperAdmin) return null;
+  
+  const [open, setOpen] = useState(false);
+  const [teams, setTeams] = useState<ITeam[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTeam, setSelectedTeam] = useState<ITeam | null>(null);
   
   // Carregar os times disponíveis
   useEffect(() => {

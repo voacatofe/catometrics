@@ -10,10 +10,25 @@ interface DashboardWithTeam {
   description: string | null;
   url: string;
   isActive: boolean;
-  createdAt: Date;
+  createdAt: Date | string | null;
   team: {
     name: string;
   };
+}
+
+// Função segura para formatar datas (fora do componente React)
+function safeFormatDate(date: Date | string | null): string {
+  if (!date) return "N/A";
+  
+  // Se já for string, retorna a string
+  if (typeof date === 'string') return date;
+  
+  try {
+    // Formato simples sem localização
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    return "Data inválida";
+  }
 }
 
 export default async function AdminDashboardsPage() {
@@ -28,6 +43,7 @@ export default async function AdminDashboardsPage() {
       description: true,
       url: true,
       isActive: true,
+      createdAt: true,
       team: {
         select: {
           name: true,
@@ -38,6 +54,12 @@ export default async function AdminDashboardsPage() {
       name: "asc",
     },
   });
+
+  // Preparar dados seguros para renderização, convertendo datas para strings
+  const safeDashboards = dashboards.map(dashboard => ({
+    ...dashboard,
+    createdAt: dashboard.createdAt ? dashboard.createdAt.toISOString() : null
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,7 +72,7 @@ export default async function AdminDashboardsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {dashboards.length > 0 ? (
+            {safeDashboards.length > 0 ? (
               <div className="border rounded-md overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -65,12 +87,15 @@ export default async function AdminDashboardsPage() {
                         Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Data de Criação
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Ações
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {dashboards.map((dashboard) => (
+                    {safeDashboards.map((dashboard) => (
                       <tr key={dashboard.id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{dashboard.name}</div>
@@ -91,6 +116,16 @@ export default async function AdminDashboardsPage() {
                               Inativo
                             </span>
                           )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {dashboard.createdAt ? 
+                            new Date(dashboard.createdAt).toLocaleDateString('pt-BR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit'
+                            }) : 
+                            'N/A'
+                          }
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <a 

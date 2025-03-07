@@ -10,6 +10,23 @@ interface UserWithDetails {
   email: string | null;
   isSuperAdmin: boolean;
   isActive: boolean;
+  createdAt: Date | string | null;
+  lastLogin: Date | string | null;
+}
+
+// Função segura para formatar datas (fora do componente React)
+function safeFormatDate(date: Date | string | null): string {
+  if (!date) return "Nunca";
+  
+  // Se já for string, retorna a string
+  if (typeof date === 'string') return date;
+  
+  try {
+    // Formato simples sem localização
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    return "Data inválida";
+  }
 }
 
 export default async function AdminUsersPage() {
@@ -24,11 +41,20 @@ export default async function AdminUsersPage() {
       email: true,
       isSuperAdmin: true,
       isActive: true,
+      createdAt: true,
+      lastLogin: true,
     },
     orderBy: {
       name: "asc",
     },
   });
+
+  // Preparar dados seguros para renderização, convertendo datas para strings
+  const safeUsers = users.map(user => ({
+    ...user,
+    createdAt: user.createdAt ? user.createdAt.toISOString() : null,
+    lastLogin: user.lastLogin ? user.lastLogin.toISOString() : null
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,7 +67,7 @@ export default async function AdminUsersPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {users.length > 0 ? (
+            {safeUsers.length > 0 ? (
               <div className="border rounded-md overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -55,10 +81,16 @@ export default async function AdminUsersPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Tipo
                       </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Último Login
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Data de Criação
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
+                    {safeUsers.map((user) => (
                       <tr key={user.id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -91,6 +123,26 @@ export default async function AdminUsersPage() {
                               Usuário
                             </span>
                           )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {user.lastLogin ? 
+                            new Date(user.lastLogin).toLocaleDateString('pt-BR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit'
+                            }) : 
+                            'Nunca'
+                          }
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {user.createdAt ? 
+                            new Date(user.createdAt).toLocaleDateString('pt-BR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit'
+                            }) : 
+                            'N/A'
+                          }
                         </td>
                       </tr>
                     ))}

@@ -70,7 +70,11 @@ export async function POST(
       }
     });
     
-    return NextResponse.redirect(new URL("/admin/superadmins", req.url));
+    // Em vez de redirecionar diretamente, enviamos uma resposta para o cliente fazer o redirecionamento
+    return NextResponse.json({ 
+      success: true, 
+      redirectTo: "/admin/superadmins" 
+    });
   } catch (error) {
     console.error("Erro ao revogar superadmin:", error);
     return NextResponse.json({ error: "Erro ao processar a solicitação" }, { status: 500 });

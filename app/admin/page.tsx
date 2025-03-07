@@ -3,6 +3,8 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireSuperAdmin } from "@/lib/auth";
 
+export const dynamic = 'force-dynamic'; // Forçar que essa página seja sempre renderizada no servidor
+
 export default async function AdminDashboardPage() {
   try {
     // Proteção de rota - apenas superadmin
@@ -48,10 +50,7 @@ export default async function AdminDashboardPage() {
                 <div className="p-4 border rounded-md">
                   <h3 className="font-medium">Ambiente</h3>
                   <p className="text-sm mt-1">
-                    NODE_ENV: {process.env.NODE_ENV || 'development'}
-                  </p>
-                  <p className="text-sm mt-1">
-                    Next.js: 14.0.3
+                    Ambiente: {process.env.NODE_ENV || 'development'}
                   </p>
                 </div>
               </div>

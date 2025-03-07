@@ -10,6 +10,9 @@ COPY prisma ./prisma/
 # Instalar dependências com npm em vez de yarn
 RUN npm ci
 
+# Instalar explicitamente critters para evitar problemas de build
+RUN npm install critters --save-dev
+
 # Copiar o resto do código
 COPY . .
 

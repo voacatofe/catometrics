@@ -14,21 +14,6 @@ interface UserWithDetails {
   lastLogin: Date | string | null;
 }
 
-// Função segura para formatar datas (fora do componente React)
-function safeFormatDate(date: Date | string | null): string {
-  if (!date) return "Nunca";
-  
-  // Se já for string, retorna a string
-  if (typeof date === 'string') return date;
-  
-  try {
-    // Formato simples sem localização
-    return date.toISOString().split('T')[0];
-  } catch (e) {
-    return "Data inválida";
-  }
-}
-
 export default async function AdminUsersPage() {
   // Proteção de rota - apenas superadmin
   const session = await requireSuperAdmin();
@@ -49,11 +34,26 @@ export default async function AdminUsersPage() {
     },
   });
 
-  // Preparar dados seguros para renderização, convertendo datas para strings
+  // Função simples para formatar data
+  const formatDate = (date: Date | null): string => {
+    if (!date) return "Nunca";
+    
+    try {
+      const d = new Date(date);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (e) {
+      return "Data inválida";
+    }
+  };
+
+  // Preparar dados seguros para renderização
   const safeUsers = users.map(user => ({
     ...user,
-    createdAt: user.createdAt ? user.createdAt.toISOString() : null,
-    lastLogin: user.lastLogin ? user.lastLogin.toISOString() : null
+    createdAt: formatDate(user.createdAt),
+    lastLogin: formatDate(user.lastLogin)
   }));
 
   return (
@@ -125,24 +125,10 @@ export default async function AdminUsersPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.lastLogin ? 
-                            new Date(user.lastLogin).toLocaleDateString('pt-BR', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit'
-                            }) : 
-                            'Nunca'
-                          }
+                          {user.lastLogin}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.createdAt ? 
-                            new Date(user.createdAt).toLocaleDateString('pt-BR', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit'
-                            }) : 
-                            'N/A'
-                          }
+                          {user.createdAt}
                         </td>
                       </tr>
                     ))}

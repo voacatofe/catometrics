@@ -16,21 +16,6 @@ interface DashboardWithTeam {
   };
 }
 
-// Função segura para formatar datas (fora do componente React)
-function safeFormatDate(date: Date | string | null): string {
-  if (!date) return "N/A";
-  
-  // Se já for string, retorna a string
-  if (typeof date === 'string') return date;
-  
-  try {
-    // Formato simples sem localização
-    return date.toISOString().split('T')[0];
-  } catch (e) {
-    return "Data inválida";
-  }
-}
-
 export default async function AdminDashboardsPage() {
   // Proteção de rota - apenas superadmin
   const session = await requireSuperAdmin();
@@ -55,11 +40,27 @@ export default async function AdminDashboardsPage() {
     },
   });
 
-  // Preparar dados seguros para renderização, convertendo datas para strings
-  const safeDashboards = dashboards.map(dashboard => ({
-    ...dashboard,
-    createdAt: dashboard.createdAt ? dashboard.createdAt.toISOString() : null
-  }));
+  // Preparar dados seguros para renderização, convertendo datas para strings formatadas
+  const safeDashboards = dashboards.map(dashboard => {
+    let formattedDate = "N/A";
+    
+    if (dashboard.createdAt) {
+      try {
+        const date = new Date(dashboard.createdAt);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        formattedDate = `${day}/${month}/${year}`;
+      } catch (e) {
+        formattedDate = "Data inválida";
+      }
+    }
+    
+    return {
+      ...dashboard,
+      createdAt: formattedDate
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -118,14 +119,7 @@ export default async function AdminDashboardsPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {dashboard.createdAt ? 
-                            new Date(dashboard.createdAt).toLocaleDateString('pt-BR', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit'
-                            }) : 
-                            'N/A'
-                          }
+                          {dashboard.createdAt}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <a 

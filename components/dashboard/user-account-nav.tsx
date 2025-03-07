@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { User } from "next-auth"
+import { ShieldAlert } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,9 +12,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { UserAvatar } from "@/components/dashboard/user-avatar"
+import { Badge } from "@/components/ui/badge"
 
 interface UserAccountNavProps extends React.HTMLAttributes<HTMLDivElement> {
-  user: Pick<User, "name" | "image" | "email">
+  user: Pick<User, "name" | "image" | "email"> & {
+    isSuperAdmin?: boolean;
+  }
 }
 
 export default function UserAccountNav({ user }: UserAccountNavProps) {
@@ -24,9 +28,19 @@ export default function UserAccountNav({ user }: UserAccountNavProps) {
           user={{ name: user.name || null, image: user.image || null }}
           className="h-8 w-8"
         />
-        <span className="hidden md:inline-block">
-          {user.name}
-        </span>
+        <div className="hidden md:flex md:flex-col">
+          <span className="inline-block">
+            {user.name}
+          </span>
+          {user.isSuperAdmin && (
+            <Badge 
+              variant="outline" 
+              className="mt-1 text-xs bg-amber-100 text-amber-800 border-amber-200"
+            >
+              <ShieldAlert className="h-3 w-3 mr-1" /> Superadmin
+            </Badge>
+          )}
+        </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <div className="flex items-center justify-start gap-2 p-2">
@@ -37,12 +51,25 @@ export default function UserAccountNav({ user }: UserAccountNavProps) {
                 {user.email}
               </p>
             )}
+            {user.isSuperAdmin && (
+              <Badge 
+                variant="outline" 
+                className="mt-1 text-xs bg-amber-100 text-amber-800 border-amber-200"
+              >
+                <ShieldAlert className="h-3 w-3 mr-1" /> Superadmin
+              </Badge>
+            )}
           </div>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/dashboard">Dashboard</Link>
         </DropdownMenuItem>
+        {user.isSuperAdmin && (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">Painel de Administração</Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link href="/settings">Configurações</Link>
         </DropdownMenuItem>

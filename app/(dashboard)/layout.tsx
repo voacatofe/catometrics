@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import DashboardNav from "@/components/dashboard/dashboard-nav"
 import UserAccountNav from "@/components/dashboard/user-account-nav"
+import { SuperAdminNav } from "@/components/dashboard/SuperAdminNav"
 
 export default async function DashboardLayout({
   children,
@@ -16,11 +17,14 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
+  const isSuperAdmin = session.user.isSuperAdmin || false;
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-2 font-bold">
+            {isSuperAdmin && <SuperAdminNav />}
             <span className="text-xl">CatoMetrics</span>
           </div>
           <UserAccountNav
@@ -28,13 +32,14 @@ export default async function DashboardLayout({
               name: session.user.name,
               email: session.user.email,
               image: session.user.image,
+              isSuperAdmin,
             }}
           />
         </div>
       </header>
       <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr] lg:grid-cols-[250px_1fr]">
         <aside className="hidden w-[200px] flex-col md:flex lg:w-[250px]">
-          <DashboardNav />
+          <DashboardNav isSuperAdmin={isSuperAdmin} />
         </aside>
         <main className="flex w-full flex-1 flex-col overflow-hidden py-6">
           {children}

@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Adicionar diretiva de renderização dinâmica
+export const dynamic = 'force-dynamic';
+
 // Interface para tipar os dashboards
 interface DashboardWithTeam {
   id: string;
@@ -40,25 +43,24 @@ export default async function AdminDashboardsPage() {
     },
   });
 
-  // Preparar dados seguros para renderização, convertendo datas para strings formatadas
+  // Preparar dados seguros para renderização, garantindo que todas as propriedades sejam serializáveis
   const safeDashboards = dashboards.map(dashboard => {
-    let formattedDate = "N/A";
+    // Converter a data para string se ela existir, ou usar "N/A" se não existir
+    const formattedDate = dashboard.createdAt 
+      ? new Date(dashboard.createdAt).toLocaleDateString('pt-BR') 
+      : "N/A";
     
-    if (dashboard.createdAt) {
-      try {
-        const date = new Date(dashboard.createdAt);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        formattedDate = `${day}/${month}/${year}`;
-      } catch (e) {
-        formattedDate = "Data inválida";
-      }
-    }
-    
+    // Certificar que todos os valores são serializáveis
     return {
-      ...dashboard,
-      createdAt: formattedDate
+      id: dashboard.id,
+      name: dashboard.name || "",
+      description: dashboard.description || null,
+      url: dashboard.url || "",
+      isActive: Boolean(dashboard.isActive),
+      createdAt: formattedDate,
+      team: {
+        name: dashboard.team?.name || "Sem time"
+      }
     };
   });
 

@@ -5,6 +5,9 @@ import { db } from "@/lib/db";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Adicionar diretiva de renderização dinâmica
+export const dynamic = 'force-dynamic';
+
 // Interface para tipar os times
 interface TeamWithDetails {
   id: string;
@@ -44,6 +47,20 @@ export default async function AdminTeamsPage() {
     },
   });
 
+  // Garantir que os dados sejam seguros para serialização
+  const safeTeams = teams.map(team => ({
+    id: team.id,
+    name: team.name,
+    owner: {
+      name: team.owner?.name || null,
+      email: team.owner?.email || null
+    },
+    _count: {
+      members: team._count?.members || 0,
+      dashboards: team._count?.dashboards || 0
+    }
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <AdminHeader title="Gerenciamento de Times" />
@@ -55,7 +72,7 @@ export default async function AdminTeamsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {teams.map((team: TeamWithDetails) => (
+            {safeTeams.map((team) => (
               <div key={team.id} className="flex items-center justify-between p-4 border rounded-md">
                 <div>
                   <h3 className="font-medium">{team.name}</h3>
@@ -70,7 +87,7 @@ export default async function AdminTeamsPage() {
               </div>
             ))}
 
-            {teams.length === 0 && (
+            {safeTeams.length === 0 && (
               <p className="text-muted-foreground">Nenhum time cadastrado ainda.</p>
             )}
           </div>

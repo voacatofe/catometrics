@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Adicionar diretiva de renderização dinâmica
+export const dynamic = 'force-dynamic';
+
 // Interface para tipar os usuários
 interface UserWithDetails {
   id: string;
@@ -34,27 +37,26 @@ export default async function AdminUsersPage() {
     },
   });
 
-  // Função simples para formatar data
-  const formatDate = (date: Date | null): string => {
-    if (!date) return "Nunca";
+  // Preparar dados seguros para renderização, garantindo que todos os valores sejam serializáveis
+  const safeUsers = users.map(user => {
+    const createdAtFormatted = user.createdAt 
+      ? new Date(user.createdAt).toLocaleDateString('pt-BR') 
+      : "Nunca";
     
-    try {
-      const d = new Date(date);
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
-    } catch (e) {
-      return "Data inválida";
-    }
-  };
-
-  // Preparar dados seguros para renderização
-  const safeUsers = users.map(user => ({
-    ...user,
-    createdAt: formatDate(user.createdAt),
-    lastLogin: formatDate(user.lastLogin)
-  }));
+    const lastLoginFormatted = user.lastLogin 
+      ? new Date(user.lastLogin).toLocaleDateString('pt-BR') 
+      : "Nunca";
+    
+    return {
+      id: user.id,
+      name: user.name || "Sem nome",
+      email: user.email || "",
+      isSuperAdmin: Boolean(user.isSuperAdmin),
+      isActive: Boolean(user.isActive),
+      createdAt: createdAtFormatted,
+      lastLogin: lastLoginFormatted,
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,7 +98,7 @@ export default async function AdminUsersPage() {
                           <div className="flex items-center">
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {user.name || 'Sem nome'}
+                                {user.name}
                               </div>
                               <div className="text-sm text-gray-500">{user.email}</div>
                             </div>

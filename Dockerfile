@@ -1,17 +1,13 @@
-FROM node:18
+FROM node:18 AS builder
 
 WORKDIR /app
 
 # Copiar arquivos de dependências
 COPY package.json package-lock.json ./
-# Copiar diretório prisma para que o schema esteja disponível durante a instalação
 COPY prisma ./prisma/
 
-# Instalar dependências com npm em vez de yarn
+# Instalar dependências
 RUN npm ci
-
-# Instalar explicitamente critters para evitar problemas de build
-RUN npm install critters --save-dev
 
 # Copiar o resto do código
 COPY . .
@@ -19,22 +15,28 @@ COPY . .
 # Gerar o cliente Prisma
 RUN npx prisma generate
 
-# Construir o aplicativo
+# Construir a aplicação
 RUN npm run build
 
-# Preparar para produção - abordagem mais direta para evitar problemas
+# Segunda etapa - copiar apenas o necessário para produção
+FROM node:18-slim AS runner
+
 WORKDIR /app
 
-# Copiar o script de inicialização
-COPY start.js .
-
-# Garantir que NODE_ENV esteja configurado como production
 ENV NODE_ENV production
 ENV PORT 3000
-ENV HOSTNAME 0.0.0.0
 
-# Expor a porta 3000
+# Copiar arquivos necessários do estágio anterior
+COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+
+# Copiar o diretório .next gerado
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Expor a porta
 EXPOSE 3000
 
-# Comando para iniciar usando nosso script personalizado
-CMD ["node", "start.js"] 
+# Iniciar aplicação
+CMD ["node", "server.js"] 

@@ -5,20 +5,20 @@ const nextConfig = {
   poweredByHeader: false,
   env: {
     APP_NAME: 'CatoMetrics',
-    HOSTNAME: '0.0.0.0',
-    PORT: process.env.PORT || '3000',
   },
   images: {
     domains: ['lh3.googleusercontent.com', 'avatars.githubusercontent.com'],
+    unoptimized: true,
   },
-  // Configuração completa para output: standalone
+  // Configuração para output: standalone (produção otimizada)
   output: 'standalone',
-  // Adicionar configuração para standalone em ambientes de produção
-  experimental: {
-    outputFileTracingRoot: process.cwd(),
+  // Configuração de compilação
+  compiler: {
+    // Reduzir o tamanho do bundle, removendo mensagens de erro do React em produção
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
   },
-  // Desabilitar otimizações que estão causando erros
-  optimizeFonts: false,
   // Ignorar erros durante o build para garantir o deploy
   typescript: {
     // !! WARN !!

@@ -1,47 +1,32 @@
-FROM node:18 AS builder
+FROM node:18-slim
 
 WORKDIR /app
 
-# Copiar arquivos de dependências
-COPY package.json package-lock.json ./
+# Instalando dependências necessárias para o Prisma
+RUN apt-get update && apt-get install -y \
+    openssl \
+    libssl-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiando arquivos de dependências
+COPY package*.json ./
 COPY prisma ./prisma/
 
-# Instalar dependências
+# Instalando dependências
 RUN npm ci
 
-# Copiar o resto do código
-COPY . .
-
-# Criar diretório public se não existir
-RUN mkdir -p public
-
-# Gerar o cliente Prisma
+# Gerando o cliente Prisma
 RUN npx prisma generate
 
-# Construir a aplicação
+# Copiando o restante dos arquivos
+COPY . .
+
+# Compilando aplicação
 RUN npm run build
 
-# Segunda etapa - copiar apenas o necessário para produção
-FROM node:18-slim AS runner
-
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV PORT=3000
-
-# Copiar arquivos necessários do estágio anterior
-COPY --from=builder /app/next.config.js ./
-COPY --from=builder /app/package.json ./package.json
-
-# Criar diretório public no destino para evitar erros
-RUN mkdir -p public
-
-# Copiar o diretório .next gerado
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-# Expor a porta
+# Expondo a porta
 EXPOSE 3000
 
-# Iniciar aplicação
-CMD ["node", "server.js"] 
+# Comando para iniciar a aplicação
+CMD ["npm", "start"] 

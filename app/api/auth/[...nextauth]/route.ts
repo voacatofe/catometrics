@@ -6,9 +6,13 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import { recordUserLogin, logUserAction, AUDIT_ACTIONS } from "@/lib/auth";
 
+// Configuração hardcoded para evitar problemas com variáveis de ambiente
+const NEXTAUTH_SECRET = "umValorAleatorioMuitoSeguro123456";
+const NEXTAUTH_URL = "https://catometrics.com.br";
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: NEXTAUTH_SECRET, // Usando o valor fixo
   session: {
     strategy: "jwt",
   },

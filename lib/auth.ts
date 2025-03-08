@@ -4,6 +4,18 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
 import { Role } from "@/types/user";
 
+// Configuração de variáveis de ambiente em falback
+// Se não estiver configurado no ambiente, usa valores padrão
+if (!process.env.NEXTAUTH_SECRET) {
+  process.env.NEXTAUTH_SECRET = "umValorAleatorioMuitoSeguro123456";
+  console.log("AVISO: Usando valor padrão para NEXTAUTH_SECRET");
+}
+
+if (!process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = "https://catometrics.com.br";
+  console.log("AVISO: Usando valor padrão para NEXTAUTH_URL");
+}
+
 // Função para obter a sessão atual do usuário
 export async function getAuthSession() {
   return await getServerSession(authOptions);

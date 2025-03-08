@@ -65,6 +65,8 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
+      console.log("Iniciando tentativa de login:", values.email);
+      
       const res = await signIn("credentials", {
         redirect: false,
         email: values.email,
@@ -73,22 +75,27 @@ export default function LoginPage() {
       })
 
       setIsLoading(false)
+      
+      console.log("Resposta do login:", res);
 
       if (!res?.error) {
+        console.log("Login bem-sucedido, redirecionando para:", callbackUrl);
         router.push(callbackUrl)
         router.refresh()
       } else {
+        console.error("Erro no login:", res.error);
         toast({
           title: "Erro de autenticação",
-          description: "E-mail ou senha inválidos. Tente novamente.",
+          description: `Falha no login: ${res.error}. Tente novamente.`,
           variant: "destructive",
         })
       }
     } catch (error) {
+      console.error("Exceção durante login:", error);
       setIsLoading(false)
       toast({
         title: "Algo deu errado",
-        description: "Ocorreu um erro ao fazer login. Tente novamente mais tarde.",
+        description: `Ocorreu um erro ao fazer login: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Tente novamente mais tarde.`,
         variant: "destructive",
       })
     }

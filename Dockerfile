@@ -14,7 +14,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Instalando dependências
-RUN npm ci
+RUN npm install
 
 # Gerando o cliente Prisma
 RUN npx prisma generate

@@ -7,6 +7,7 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import { Eye, EyeOff } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -34,6 +35,7 @@ export default function LoginPage() {
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
   const error = searchParams.get("error")
 
@@ -54,6 +56,10 @@ export default function LoginPage() {
       password: "",
     },
   })
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword)
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
@@ -126,14 +132,31 @@ export default function LoginPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Senha</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="password" 
-                      placeholder="******" 
-                      {...field} 
-                      disabled={isLoading}
-                    />
-                  </FormControl>
+                  <div className="relative">
+                    <FormControl>
+                      <Input 
+                        type={showPassword ? "text" : "password"} 
+                        placeholder="******" 
+                        {...field} 
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      onClick={togglePasswordVisibility}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      <span className="sr-only">
+                        {showPassword ? "Esconder senha" : "Mostrar senha"}
+                      </span>
+                    </button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

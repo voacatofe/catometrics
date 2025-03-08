@@ -6,6 +6,7 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import { Eye, EyeOff } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -39,6 +40,8 @@ export default function RegisterPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,6 +52,14 @@ export default function RegisterPage() {
       confirmPassword: "",
     },
   })
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword)
+  }
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword)
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
@@ -147,14 +158,31 @@ export default function RegisterPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Senha</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="password" 
-                      placeholder="******" 
-                      {...field} 
-                      disabled={isLoading}
-                    />
-                  </FormControl>
+                  <div className="relative">
+                    <FormControl>
+                      <Input 
+                        type={showPassword ? "text" : "password"}
+                        placeholder="******" 
+                        {...field} 
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      onClick={togglePasswordVisibility}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      <span className="sr-only">
+                        {showPassword ? "Esconder senha" : "Mostrar senha"}
+                      </span>
+                    </button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -165,14 +193,31 @@ export default function RegisterPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Confirmar Senha</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="password" 
-                      placeholder="******" 
-                      {...field} 
-                      disabled={isLoading}
-                    />
-                  </FormControl>
+                  <div className="relative">
+                    <FormControl>
+                      <Input 
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="******" 
+                        {...field} 
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      onClick={toggleConfirmPasswordVisibility}
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      <span className="sr-only">
+                        {showConfirmPassword ? "Esconder senha" : "Mostrar senha"}
+                      </span>
+                    </button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

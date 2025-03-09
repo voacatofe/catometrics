@@ -3,8 +3,10 @@ import { db } from "@/lib/db";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Adicionar diretiva de renderização dinâmica
+// Diretiva para forçar renderização no servidor
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 
 // Componente para lidar com erros
 function ErrorDisplay({ message }: { message: string }) {
@@ -22,7 +24,7 @@ function ErrorDisplay({ message }: { message: string }) {
   );
 }
 
-// Interface simples para garantir que todos os dados sejam serializáveis
+// Interface simplificada ao extremo
 interface SafeDashboard {
   id: string;
   name: string;
@@ -36,12 +38,12 @@ interface SafeDashboard {
 export default async function AdminDashboardsPage() {
   try {
     // Proteção de rota - apenas superadmin
-    const session = await requireSuperAdmin();
+    await requireSuperAdmin();
 
-    // Buscar todos os dashboards com tratamento de erro
-    let dashboards;
+    // Implementação segura e simplificada
     try {
-      dashboards = await db.dashboard.findMany({
+      // Apenas dados mínimos necessários
+      const rawDashboards = await db.dashboard.findMany({
         select: {
           id: true,
           name: true,
@@ -55,35 +57,22 @@ export default async function AdminDashboardsPage() {
             },
           },
         },
+        take: 100, // Limite de resultados para evitar problemas
         orderBy: {
           name: "asc",
         },
       });
-    } catch (dbError) {
-      console.error("Erro ao buscar dashboards:", dbError);
-      return <ErrorDisplay message="Não foi possível buscar a lista de dashboards do banco de dados." />;
-    }
-
-    // Verificar se os dados são válidos
-    if (!Array.isArray(dashboards)) {
-      console.error("Resposta inesperada da busca de dashboards:", dashboards);
-      return <ErrorDisplay message="Formato de dados inválido retornado pelo banco de dados." />;
-    }
-
-    // Criar um array de objetos simples e serializáveis
-    const safeDashboards: SafeDashboard[] = dashboards.map(dashboard => {
-      try {
-        // Converter data para string de forma segura
-        let formattedDate = "N/A";
-        if (dashboard.createdAt) {
-          try {
-            formattedDate = new Date(dashboard.createdAt).toLocaleDateString('pt-BR');
-          } catch {
-            formattedDate = "Data inválida";
-          }
-        }
-        
-        // Certificar que todos os valores são primitivos e serializáveis
+      
+      // Converter através de JSON para garantir que apenas valores primitivos são mantidos
+      const jsonSafe = JSON.stringify(rawDashboards);
+      const parsedDashboards = JSON.parse(jsonSafe);
+      
+      // Transformar em objetos simples e planos
+      const safeDashboards: SafeDashboard[] = parsedDashboards.map((dashboard: any) => {
+        const formattedDate = dashboard.createdAt 
+          ? new Date(dashboard.createdAt).toLocaleDateString('pt-BR')
+          : "N/A";
+          
         return {
           id: String(dashboard.id || ""),
           name: String(dashboard.name || "Sem nome"),
@@ -93,89 +82,82 @@ export default async function AdminDashboardsPage() {
           createdAt: formattedDate,
           teamName: String(dashboard.team?.name || "Sem time")
         };
-      } catch (formatError) {
-        console.error("Erro ao formatar dados do dashboard:", formatError, dashboard);
-        return {
-          id: String(dashboard.id || "erro-id"),
-          name: "Erro ao formatar dados",
-          description: "Erro ao formatar dados",
-          url: "",
-          isActive: false,
-          createdAt: "Erro de formato",
-          teamName: "Erro ao formatar dados"
-        };
-      }
-    });
+      });
 
-    return (
-      <div className="flex flex-col gap-6">
-        <AdminHeader title="Gerenciar Dashboards" />
-        
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dashboards</CardTitle>
-              <CardDescription>Lista de todos os dashboards no sistema.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {safeDashboards.length === 0 ? (
-                <p className="text-muted-foreground">Nenhum dashboard encontrado.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Nome</th>
-                        <th className="text-left p-2">Time</th>
-                        <th className="text-left p-2">Status</th>
-                        <th className="text-left p-2">URL</th>
-                        <th className="text-left p-2">Criado em</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {safeDashboards.map((dashboard) => (
-                        <tr key={dashboard.id} className="border-b hover:bg-gray-50">
-                          <td className="p-2 font-medium">{dashboard.name}</td>
-                          <td className="p-2">{dashboard.teamName}</td>
-                          <td className="p-2">
-                            {dashboard.isActive ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Ativo
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                Inativo
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-2">
-                            {dashboard.url ? (
-                              <a 
-                                href={dashboard.url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
-                              >
-                                {dashboard.url.length > 30 ? dashboard.url.substring(0, 30) + '...' : dashboard.url}
-                              </a>
-                            ) : (
-                              <span className="text-gray-500">Sem URL</span>
-                            )}
-                          </td>
-                          <td className="p-2">{dashboard.createdAt}</td>
+      // Renderizar interface básica
+      return (
+        <div className="flex flex-col gap-6">
+          <AdminHeader title="Gerenciar Dashboards" />
+          
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Dashboards</CardTitle>
+                <CardDescription>Lista de todos os dashboards no sistema.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {safeDashboards.length === 0 ? (
+                  <p className="text-muted-foreground">Nenhum dashboard encontrado.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2">Nome</th>
+                          <th className="text-left p-2">Time</th>
+                          <th className="text-left p-2">Status</th>
+                          <th className="text-left p-2">URL</th>
+                          <th className="text-left p-2">Criado em</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      </thead>
+                      <tbody>
+                        {safeDashboards.map((dashboard) => (
+                          <tr key={dashboard.id} className="border-b hover:bg-gray-50">
+                            <td className="p-2 font-medium">{dashboard.name}</td>
+                            <td className="p-2">{dashboard.teamName}</td>
+                            <td className="p-2">
+                              {dashboard.isActive ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Ativo
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                  Inativo
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-2">
+                              {dashboard.url ? (
+                                <a 
+                                  href={dashboard.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {dashboard.url.length > 30 ? dashboard.url.substring(0, 30) + '...' : dashboard.url}
+                                </a>
+                              ) : (
+                                <span className="text-gray-500">Sem URL</span>
+                              )}
+                            </td>
+                            <td className="p-2">{dashboard.createdAt}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
-    );
-  } catch (error) {
-    console.error("Erro não tratado na página de dashboards:", error);
-    return <ErrorDisplay message="Ocorreu um erro inesperado ao carregar a página." />;
+      );
+    } catch (dbError: any) {
+      console.error("[ERRO CRÍTICO] Falha ao processar dashboards:", dbError);
+      return <ErrorDisplay message={`Erro ao processar os dados: ${dbError.message || 'Erro desconhecido'}`} />;
+    }
+  } catch (error: any) {
+    console.error("[ERRO GLOBAL] Falha de autorização:", error);
+    return <ErrorDisplay message={`Erro de acesso: ${error.message || 'Acesso não autorizado'}`} />;
   }
 } 

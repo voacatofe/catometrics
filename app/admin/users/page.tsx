@@ -3,8 +3,10 @@ import { db } from "@/lib/db";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Adicionar diretiva de renderização dinâmica
+// Diretiva para forçar renderização no servidor
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 
 // Componente para lidar com erros
 function ErrorDisplay({ message }: { message: string }) {
@@ -22,7 +24,7 @@ function ErrorDisplay({ message }: { message: string }) {
   );
 }
 
-// Interface simples para garantir que todos os dados sejam serializáveis
+// Interface simplificada ao extremo
 interface SafeUser {
   id: string;
   name: string;
@@ -36,12 +38,12 @@ interface SafeUser {
 export default async function AdminUsersPage() {
   try {
     // Proteção de rota - apenas superadmin
-    const session = await requireSuperAdmin();
+    await requireSuperAdmin();
     
-    // Buscar todos os usuários com tratamento de erro
-    let users;
+    // Implementação segura e simplificada
     try {
-      users = await db.user.findMany({
+      // Apenas dados mínimos necessários
+      const rawUsers = await db.user.findMany({
         select: {
           id: true,
           name: true,
@@ -51,135 +53,108 @@ export default async function AdminUsersPage() {
           createdAt: true,
           lastLogin: true,
         },
+        take: 100, // Limite de resultados para evitar problemas
         orderBy: {
           name: "asc",
         },
       });
-    } catch (dbError) {
-      console.error("Erro ao buscar usuários:", dbError);
-      return <ErrorDisplay message="Não foi possível buscar a lista de usuários do banco de dados." />;
-    }
-
-    // Verificar se os dados são válidos antes de processá-los
-    if (!Array.isArray(users)) {
-      console.error("Resposta inesperada da busca de usuários:", users);
-      return <ErrorDisplay message="Formato de dados inválido retornado pelo banco de dados." />;
-    }
-
-    // Criar um array de objetos simples e serializáveis
-    const safeUsers: SafeUser[] = users.map(user => {
-      try {
-        // Converter datas para strings seguras
-        let createdAtFormatted = "Nunca";
-        if (user.createdAt) {
-          try {
-            createdAtFormatted = new Date(user.createdAt).toLocaleDateString('pt-BR');
-          } catch {
-            createdAtFormatted = "Data inválida";
-          }
-        }
-        
-        let lastLoginFormatted = "Nunca";
-        if (user.lastLogin) {
-          try {
-            lastLoginFormatted = new Date(user.lastLogin).toLocaleDateString('pt-BR');
-          } catch {
-            lastLoginFormatted = "Data inválida";
-          }
-        }
-        
-        // Retornar um objeto simples com tipos primitivos
+      
+      // Converter através de JSON para garantir que apenas valores primitivos são mantidos
+      const jsonSafe = JSON.stringify(rawUsers);
+      const parsedUsers = JSON.parse(jsonSafe);
+      
+      // Transformar em objetos simples e planos
+      const safeUsers: SafeUser[] = parsedUsers.map((user: any) => {
+        const createdAtStr = user.createdAt 
+          ? new Date(user.createdAt).toLocaleDateString('pt-BR')
+          : "Nunca";
+          
+        const lastLoginStr = user.lastLogin
+          ? new Date(user.lastLogin).toLocaleDateString('pt-BR')
+          : "Nunca";
+          
         return {
           id: String(user.id || "ID não disponível"),
           name: String(user.name || "Sem nome"),
           email: String(user.email || ""),
           isSuperAdmin: Boolean(user.isSuperAdmin),
           isActive: Boolean(user.isActive),
-          createdAt: createdAtFormatted,
-          lastLogin: lastLoginFormatted,
+          createdAt: createdAtStr,
+          lastLogin: lastLoginStr,
         };
-      } catch (formatError) {
-        console.error("Erro ao formatar dados do usuário:", formatError, user);
-        // Retornar versão simplificada do usuário em caso de erro
-        return {
-          id: String(user.id || "erro-id"),
-          name: "Erro ao formatar dados",
-          email: "Erro ao formatar dados",
-          isSuperAdmin: false,
-          isActive: false,
-          createdAt: "Erro de formato",
-          lastLogin: "Erro de formato",
-        };
-      }
-    });
+      });
 
-    // Renderizar a interface
-    return (
-      <div className="flex flex-col gap-6">
-        <AdminHeader title="Gerenciar Usuários" />
-        
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Usuários</CardTitle>
-              <CardDescription>Lista de todos os usuários no sistema.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {safeUsers.length === 0 ? (
-                <p className="text-muted-foreground">Nenhum usuário encontrado.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Nome</th>
-                        <th className="text-left p-2">Email</th>
-                        <th className="text-left p-2">Status</th>
-                        <th className="text-left p-2">SuperAdmin</th>
-                        <th className="text-left p-2">Criado em</th>
-                        <th className="text-left p-2">Último login</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {safeUsers.map((user) => (
-                        <tr key={user.id} className="border-b hover:bg-gray-50">
-                          <td className="p-2">{user.name}</td>
-                          <td className="p-2">{user.email}</td>
-                          <td className="p-2">
-                            {user.isActive ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Ativo
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                Inativo
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-2">
-                            {user.isSuperAdmin ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                Sim
-                              </span>
-                            ) : (
-                              <span className="text-gray-500">Não</span>
-                            )}
-                          </td>
-                          <td className="p-2">{user.createdAt}</td>
-                          <td className="p-2">{user.lastLogin}</td>
+      // Renderizar interface básica
+      return (
+        <div className="flex flex-col gap-6">
+          <AdminHeader title="Gerenciar Usuários" />
+          
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Usuários</CardTitle>
+                <CardDescription>Lista de todos os usuários no sistema.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {safeUsers.length === 0 ? (
+                  <p className="text-muted-foreground">Nenhum usuário encontrado.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2">Nome</th>
+                          <th className="text-left p-2">Email</th>
+                          <th className="text-left p-2">Status</th>
+                          <th className="text-left p-2">SuperAdmin</th>
+                          <th className="text-left p-2">Criado em</th>
+                          <th className="text-left p-2">Último login</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      </thead>
+                      <tbody>
+                        {safeUsers.map((user) => (
+                          <tr key={user.id} className="border-b hover:bg-gray-50">
+                            <td className="p-2">{user.name}</td>
+                            <td className="p-2">{user.email}</td>
+                            <td className="p-2">
+                              {user.isActive ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Ativo
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                  Inativo
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-2">
+                              {user.isSuperAdmin ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                  Sim
+                                </span>
+                              ) : (
+                                <span className="text-gray-500">Não</span>
+                              )}
+                            </td>
+                            <td className="p-2">{user.createdAt}</td>
+                            <td className="p-2">{user.lastLogin}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
-    );
-  } catch (error) {
-    console.error("Erro não tratado na página de usuários:", error);
-    return <ErrorDisplay message="Ocorreu um erro inesperado ao carregar a página." />;
+      );
+    } catch (dbError: any) {
+      console.error("[ERRO CRÍTICO] Falha ao processar usuários:", dbError);
+      return <ErrorDisplay message={`Erro ao processar os dados: ${dbError.message || 'Erro desconhecido'}`} />;
+    }
+  } catch (error: any) {
+    console.error("[ERRO GLOBAL] Falha de autorização:", error);
+    return <ErrorDisplay message={`Erro de acesso: ${error.message || 'Acesso não autorizado'}`} />;
   }
 } 

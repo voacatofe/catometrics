@@ -1,72 +1,98 @@
 import { redirect } from "next/navigation";
-import { AdminHeader } from "@/components/admin/AdminHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireSuperAdmin } from "@/lib/auth";
+import { Users, PieChart, Settings, ShieldAlert } from "lucide-react";
 
-export const dynamic = 'force-dynamic'; // Forçar que essa página seja sempre renderizada no servidor
+import { requireSuperAdmin } from "@/lib/auth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+
+// Diretiva para forçar renderização no servidor
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
+
+// Componente para lidar com erros
+function ErrorDisplay({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <AdminHeader title="Painel Administrativo" />
+      <div className="bg-red-50 border border-red-200 p-4 rounded-md">
+        <h2 className="text-lg font-semibold text-red-800 mb-2">Erro ao acessar painel administrativo</h2>
+        <p className="text-red-700">{message}</p>
+        <p className="mt-2 text-gray-700">
+          Por favor, tente novamente mais tarde ou contate o suporte técnico se o problema persistir.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default async function AdminDashboardPage() {
   try {
     // Proteção de rota - apenas superadmin
-    const session = await requireSuperAdmin();
+    await requireSuperAdmin();
     
     // Versão extremamente simples da página
     return (
       <div className="flex flex-col gap-6">
         <AdminHeader title="Painel Administrativo" />
         
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Visão Geral</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Usuários</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">CatoMetrics</div>
+              <div className="text-2xl font-bold">Gerenciar Usuários</div>
               <p className="text-xs text-muted-foreground mt-2">
-                Painel administrativo simplificado para evitar erros de execução.
+                Administração de contas de usuários.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Times</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">Gerenciar Times</div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Administração de times e grupos.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Dashboards</CardTitle>
+              <PieChart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">Gerenciar Dashboards</div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Administração de painéis analíticos.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Configurações</CardTitle>
+              <Settings className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">Configurações do Sistema</div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Configurações gerais da plataforma.
               </p>
             </CardContent>
           </Card>
         </div>
-        
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Status do Sistema</CardTitle>
-              <CardDescription>Informações básicas sobre o sistema</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 border rounded-md">
-                  <h3 className="font-medium">Usuário</h3>
-                  <p className="text-sm mt-1">
-                    Logado como: {session.user.name || session.user.email}
-                  </p>
-                  <p className="text-sm text-green-600 mt-2">
-                    ✓ Acesso de superadmin verificado
-                  </p>
-                </div>
-                
-                <div className="p-4 border rounded-md">
-                  <h3 className="font-medium">Ambiente</h3>
-                  <p className="text-sm mt-1">
-                    Ambiente: {process.env.NODE_ENV || 'development'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     );
-  } catch (error) {
-    console.error("Erro na página admin:", error);
-    // Retornar uma página extremamente simples em caso de erro
-    return (
-      <div className="p-8">
-        <h1 className="text-xl font-bold mb-4">Painel Administrativo</h1>
-        <p>Ocorreu um erro ao carregar o painel. Por favor, tente novamente mais tarde.</p>
-      </div>
-    );
+  } catch (error: any) {
+    console.error("[ERRO GLOBAL] Falha de autorização:", error);
+    return <ErrorDisplay message={`Erro de acesso: ${error.message || 'Acesso não autorizado'}`} />;
   }
 } 

@@ -6,144 +6,164 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 // Adicionar diretiva de renderização dinâmica
 export const dynamic = 'force-dynamic';
 
-// Interface para tipar os dashboards
-interface DashboardWithTeam {
-  id: string;
-  name: string;
-  description: string | null;
-  url: string;
-  isActive: boolean;
-  createdAt: Date | string | null;
-  team: {
-    name: string;
-  };
+// Componente para lidar com erros
+function ErrorDisplay({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <AdminHeader title="Gerenciar Dashboards" />
+      <div className="bg-red-50 border border-red-200 p-4 rounded-md">
+        <h2 className="text-lg font-semibold text-red-800 mb-2">Erro ao carregar dashboards</h2>
+        <p className="text-red-700">{message}</p>
+        <p className="mt-2 text-gray-700">
+          Por favor, tente novamente mais tarde ou contate o suporte técnico se o problema persistir.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default async function AdminDashboardsPage() {
-  // Proteção de rota - apenas superadmin
-  const session = await requireSuperAdmin();
+  try {
+    // Proteção de rota - apenas superadmin
+    const session = await requireSuperAdmin();
 
-  // Buscar todos os dashboards
-  const dashboards = await db.dashboard.findMany({
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      url: true,
-      isActive: true,
-      createdAt: true,
-      team: {
+    // Buscar todos os dashboards com tratamento de erro
+    let dashboards;
+    try {
+      dashboards = await db.dashboard.findMany({
         select: {
+          id: true,
           name: true,
+          description: true,
+          url: true,
+          isActive: true,
+          createdAt: true,
+          team: {
+            select: {
+              name: true,
+            },
+          },
         },
-      },
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
+        orderBy: {
+          name: "asc",
+        },
+      });
+    } catch (dbError) {
+      console.error("Erro ao buscar dashboards:", dbError);
+      return <ErrorDisplay message="Não foi possível buscar a lista de dashboards do banco de dados." />;
+    }
 
-  // Preparar dados seguros para renderização, garantindo que todas as propriedades sejam serializáveis
-  const safeDashboards = dashboards.map(dashboard => {
-    // Converter a data para string se ela existir, ou usar "N/A" se não existir
-    const formattedDate = dashboard.createdAt 
-      ? new Date(dashboard.createdAt).toLocaleDateString('pt-BR') 
-      : "N/A";
-    
-    // Certificar que todos os valores são serializáveis
-    return {
-      id: dashboard.id,
-      name: dashboard.name || "",
-      description: dashboard.description || null,
-      url: dashboard.url || "",
-      isActive: Boolean(dashboard.isActive),
-      createdAt: formattedDate,
-      team: {
-        name: dashboard.team?.name || "Sem time"
+    // Verificar se os dados são válidos
+    if (!Array.isArray(dashboards)) {
+      console.error("Resposta inesperada da busca de dashboards:", dashboards);
+      return <ErrorDisplay message="Formato de dados inválido retornado pelo banco de dados." />;
+    }
+
+    // Preparar dados seguros para renderização, garantindo que todas as propriedades sejam serializáveis
+    const safeDashboards = dashboards.map(dashboard => {
+      try {
+        // Converter a data para string se ela existir, ou usar "N/A" se não existir
+        const formattedDate = dashboard.createdAt 
+          ? new Date(dashboard.createdAt).toLocaleDateString('pt-BR') 
+          : "N/A";
+        
+        // Certificar que todos os valores são serializáveis
+        return {
+          id: dashboard.id,
+          name: dashboard.name || "Sem nome",
+          description: dashboard.description || "Sem descrição",
+          url: dashboard.url || "",
+          isActive: Boolean(dashboard.isActive),
+          createdAt: formattedDate,
+          team: {
+            name: dashboard.team?.name || "Sem time"
+          }
+        };
+      } catch (formatError) {
+        console.error("Erro ao formatar dados do dashboard:", formatError, dashboard);
+        return {
+          id: dashboard.id,
+          name: dashboard.name || "Sem nome",
+          description: "Erro ao formatar dados",
+          url: "",
+          isActive: false,
+          createdAt: "Erro de formato",
+          team: {
+            name: "Erro ao formatar dados"
+          }
+        };
       }
-    };
-  });
+    });
 
-  return (
-    <div className="flex flex-col gap-6">
-      <AdminHeader title="Gerenciamento de Dashboards" />
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Dashboards Cadastrados</CardTitle>
-          <CardDescription>Gerenciamento de todos os dashboards da plataforma</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {safeDashboards.length > 0 ? (
-              <div className="border rounded-md overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nome
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Time
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Data de Criação
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Ações
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {safeDashboards.map((dashboard) => (
-                      <tr key={dashboard.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{dashboard.name}</div>
-                          {dashboard.description && (
-                            <div className="text-sm text-gray-500">{dashboard.description}</div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{dashboard.team.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {dashboard.isActive ? (
-                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                              Ativo
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
-                              Inativo
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {dashboard.createdAt}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <a 
-                            href={dashboard.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Visualizar
-                          </a>
-                        </td>
+    return (
+      <div className="flex flex-col gap-6">
+        <AdminHeader title="Gerenciar Dashboards" />
+        
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Dashboards</CardTitle>
+              <CardDescription>Lista de todos os dashboards no sistema.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {safeDashboards.length === 0 ? (
+                <p className="text-muted-foreground">Nenhum dashboard encontrado.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Nome</th>
+                        <th className="text-left p-2">Time</th>
+                        <th className="text-left p-2">Status</th>
+                        <th className="text-left p-2">URL</th>
+                        <th className="text-left p-2">Criado em</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-center py-4 text-gray-500">Nenhum dashboard cadastrado ainda.</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+                    </thead>
+                    <tbody>
+                      {safeDashboards.map((dashboard) => (
+                        <tr key={dashboard.id} className="border-b hover:bg-gray-50">
+                          <td className="p-2 font-medium">{dashboard.name}</td>
+                          <td className="p-2">{dashboard.team.name}</td>
+                          <td className="p-2">
+                            {dashboard.isActive ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Ativo
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                Inativo
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2">
+                            {dashboard.url ? (
+                              <a 
+                                href={dashboard.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline"
+                              >
+                                {dashboard.url.length > 30 ? dashboard.url.substring(0, 30) + '...' : dashboard.url}
+                              </a>
+                            ) : (
+                              <span className="text-gray-500">Sem URL</span>
+                            )}
+                          </td>
+                          <td className="p-2">{dashboard.createdAt}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  } catch (error) {
+    console.error("Erro não tratado na página de dashboards:", error);
+    return <ErrorDisplay message="Ocorreu um erro inesperado ao carregar a página." />;
+  }
 } 

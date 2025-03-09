@@ -1,31 +1,75 @@
-"use client";
+import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { db } from '@/lib/db';
+import UserTable from './components/user-table';
+import UserTableSkeleton from './components/user-table-skeleton';
 
-export default function AdminUsersPage() {
-  const [loading, setLoading] = useState(true);
+// Manter as diretivas para garantir comportamento correto
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 
-  // Simular carregamento
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+// Função para buscar usuários de forma segura no servidor
+async function getUsers() {
+  try {
+    const users = await db.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isSuperAdmin: true,
+        isActive: true,
+        createdAt: true,
+        lastLogin: true,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+      take: 100,
+    });
 
-  if (loading) {
-    return (
-      <div className="flex flex-col gap-6">
-        <AdminHeader title="Gerenciar Usuários" />
-        <div className="p-4 text-center">
-          <p>Carregando...</p>
-        </div>
-      </div>
-    );
+    // Transformar datas em strings para serialização segura
+    return users.map(user => ({
+      id: user.id,
+      name: user.name || 'Sem nome',
+      email: user.email || '',
+      isSuperAdmin: Boolean(user.isSuperAdmin),
+      isActive: Boolean(user.isActive),
+      createdAt: user.createdAt ? user.createdAt.toISOString() : null,
+      lastLogin: user.lastLogin ? user.lastLogin.toISOString() : null,
+    }));
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    return [];
   }
+}
 
+export default async function AdminUsersPage() {
+  // Verificar autenticação no servidor
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    redirect('/login');
+  }
+  
+  // Verificar se é superadmin
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { isSuperAdmin: true }
+  });
+  
+  if (!user?.isSuperAdmin) {
+    redirect('/dashboard');
+  }
+  
+  // Buscar dados iniciais (executado no servidor)
+  const users = await getUsers();
+  
   return (
     <div className="flex flex-col gap-6">
       <AdminHeader title="Gerenciar Usuários" />
@@ -34,69 +78,14 @@ export default function AdminUsersPage() {
         <Card>
           <CardHeader>
             <CardTitle>Usuários</CardTitle>
-            <CardDescription>Componente do lado do cliente</CardDescription>
+            <CardDescription>Lista de todos os usuários no sistema</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
-              <h3 className="text-blue-800 font-semibold mb-2">Modo Cliente</h3>
-              <p className="text-blue-700">
-                Esta página agora é renderizada inteiramente no cliente para evitar problemas de serialização.
-                Os dados são estáticos apenas para fins de demonstração.
-              </p>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Nome</th>
-                    <th className="text-left p-2">Email</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Perfil</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="p-2 font-medium">João Silva</td>
-                    <td className="p-2">joao.silva@exemplo.com</td>
-                    <td className="p-2">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Ativo
-                      </span>
-                    </td>
-                    <td className="p-2">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        SuperAdmin
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-2 font-medium">Maria Costa</td>
-                    <td className="p-2">maria.costa@exemplo.com</td>
-                    <td className="p-2">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Ativo
-                      </span>
-                    </td>
-                    <td className="p-2">
-                      <span className="text-gray-500">Usuário comum</span>
-                    </td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="p-2 font-medium">Pedro Santos</td>
-                    <td className="p-2">pedro.santos@exemplo.com</td>
-                    <td className="p-2">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Inativo
-                      </span>
-                    </td>
-                    <td className="p-2">
-                      <span className="text-gray-500">Usuário comum</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            {/* Usar Suspense para melhorar a experiência de carregamento */}
+            <Suspense fallback={<UserTableSkeleton />}>
+              {/* Passar os dados do servidor para um componente cliente interativo */}
+              <UserTable initialUsers={users} />
+            </Suspense>
           </CardContent>
         </Card>
       </div>

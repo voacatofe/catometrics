@@ -70,6 +70,13 @@ export default function DashboardNav({ isSuperAdmin = false }: DashboardNavProps
 
   // Combinar itens de navegação, incluindo itens de admin se o usuário for superadmin
   const allNavItems = [...navItems, ...(isSuperAdmin ? adminNavItems : [])];
+  
+  // Logging para diagnóstico
+  console.log("[DEBUG] DashboardNav - Status do usuário:", { 
+    isSuperAdmin, 
+    pathname,
+    adminLinksShown: isSuperAdmin
+  });
 
   return (
     <nav className="grid items-start gap-2 py-6">
@@ -87,10 +94,13 @@ export default function DashboardNav({ isSuperAdmin = false }: DashboardNavProps
         </Link>
       ))}
       
-      {isSuperAdmin && (
+      {/* Exibir os links de admin mesmo que isSuperAdmin seja false durante o diagnóstico */}
+      {(isSuperAdmin || process.env.NODE_ENV === "development") && (
         <>
           <Separator className="my-4" />
-          <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Administração</p>
+          <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">
+            Administração {!isSuperAdmin && process.env.NODE_ENV === "development" && "(Modo Diagnóstico)"}
+          </p>
           
           {adminNavItems.map((item) => (
             <Link
@@ -98,7 +108,8 @@ export default function DashboardNav({ isSuperAdmin = false }: DashboardNavProps
               href={item.href}
               className={cn(
                 "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                pathname === item.href ? "bg-accent text-accent-foreground" : "transparent"
+                pathname === item.href ? "bg-accent text-accent-foreground" : "transparent",
+                !isSuperAdmin && process.env.NODE_ENV === "development" && "text-orange-500"
               )}
             >
               {item.icon}

@@ -34,16 +34,29 @@ export async function requireAuth() {
 export async function requireSuperAdmin() {
   const session = await requireAuth();
   
+  console.log("[DEBUG] Verificando permissão de SuperAdmin para usuário:", {
+    userId: session.user.id,
+    email: session.user.email,
+    isSuperAdminFromSession: session.user.isSuperAdmin
+  });
+  
   // Verificar se é superadmin
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { isSuperAdmin: true }
+    select: { isSuperAdmin: true, email: true, name: true }
+  });
+  
+  console.log("[DEBUG] Resultado da verificação no banco de dados:", {
+    email: user?.email,
+    isSuperAdminFromDB: user?.isSuperAdmin
   });
   
   if (!user?.isSuperAdmin) {
+    console.log("[DEBUG] Acesso negado: usuário não é SuperAdmin");
     redirect("/dashboard");
   }
   
+  console.log("[DEBUG] Acesso permitido: usuário é SuperAdmin");
   return session;
 }
 

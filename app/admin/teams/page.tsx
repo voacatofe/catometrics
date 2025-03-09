@@ -24,6 +24,18 @@ function ErrorDisplay({ message }: { message: string }) {
   );
 }
 
+// Interface simples para garantir que todos os dados sejam serializáveis
+interface SafeTeam {
+  id: string;
+  name: string;
+  description: string;
+  memberCount: number;
+  dashboardCount: number;
+  ownerName: string;
+  ownerEmail: string;
+  createdAt: string;
+}
+
 export default async function AdminTeamsPage() {
   try {
     // Proteção de rota - apenas superadmin
@@ -67,37 +79,41 @@ export default async function AdminTeamsPage() {
       return <ErrorDisplay message="Formato de dados inválido retornado pelo banco de dados." />;
     }
     
-    // Preparar dados para renderização
-    const safeTeams = teams.map(team => {
+    // Criar um array de objetos simples e serializáveis
+    const safeTeams: SafeTeam[] = teams.map(team => {
       try {
-        const createdAtFormatted = team.createdAt 
-          ? new Date(team.createdAt).toLocaleDateString('pt-BR') 
-          : "N/A";
+        // Converter data para string
+        let createdAtStr = "N/A";
+        if (team.createdAt) {
+          try {
+            createdAtStr = new Date(team.createdAt).toLocaleDateString('pt-BR');
+          } catch {
+            createdAtStr = "Data inválida";
+          }
+        }
         
+        // Retornar um objeto simples com tipos primitivos
         return {
-          id: team.id,
-          name: team.name,
-          description: team.description || "Sem descrição",
-          memberCount: team._count.members,
-          dashboardCount: team._count.dashboards,
-          owner: {
-            name: team.owner?.name || "Sem proprietário",
-            email: team.owner?.email || ""
-          },
-          createdAt: createdAtFormatted
+          id: String(team.id || ""),
+          name: String(team.name || "Nome não disponível"),
+          description: String(team.description || "Sem descrição"),
+          memberCount: Number(team._count?.members || 0),
+          dashboardCount: Number(team._count?.dashboards || 0),
+          ownerName: String(team.owner?.name || "Sem proprietário"),
+          ownerEmail: String(team.owner?.email || ""),
+          createdAt: createdAtStr
         };
       } catch (formatError) {
         console.error("Erro ao formatar dados do time:", formatError, team);
+        // Retornar um objeto com valores padrão em caso de erro
         return {
-          id: team.id,
-          name: team.name || "Nome não disponível",
+          id: String(team.id || "erro-id"),
+          name: "Erro ao formatar dados",
           description: "Erro ao formatar dados",
           memberCount: 0,
           dashboardCount: 0,
-          owner: {
-            name: "Erro ao formatar dados",
-            email: ""
-          },
+          ownerName: "Erro ao formatar dados",
+          ownerEmail: "",
           createdAt: "Erro de formato"
         };
       }
@@ -136,7 +152,7 @@ export default async function AdminTeamsPage() {
                           <td className="p-2">{team.description}</td>
                           <td className="p-2">{team.memberCount}</td>
                           <td className="p-2">{team.dashboardCount}</td>
-                          <td className="p-2">{team.owner.name}</td>
+                          <td className="p-2">{team.ownerName}</td>
                           <td className="p-2">{team.createdAt}</td>
                         </tr>
                       ))}

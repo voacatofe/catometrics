@@ -22,6 +22,17 @@ function ErrorDisplay({ message }: { message: string }) {
   );
 }
 
+// Interface simples para garantir que todos os dados sejam serializáveis
+interface SafeUser {
+  id: string;
+  name: string;
+  email: string;
+  isSuperAdmin: boolean;
+  isActive: boolean;
+  createdAt: string;
+  lastLogin: string;
+}
+
 export default async function AdminUsersPage() {
   try {
     // Proteção de rota - apenas superadmin
@@ -55,21 +66,33 @@ export default async function AdminUsersPage() {
       return <ErrorDisplay message="Formato de dados inválido retornado pelo banco de dados." />;
     }
 
-    // Preparar dados seguros para renderização, garantindo que todos os valores sejam serializáveis
-    const safeUsers = users.map(user => {
+    // Criar um array de objetos simples e serializáveis
+    const safeUsers: SafeUser[] = users.map(user => {
       try {
-        const createdAtFormatted = user.createdAt 
-          ? new Date(user.createdAt).toLocaleDateString('pt-BR') 
-          : "Nunca";
+        // Converter datas para strings seguras
+        let createdAtFormatted = "Nunca";
+        if (user.createdAt) {
+          try {
+            createdAtFormatted = new Date(user.createdAt).toLocaleDateString('pt-BR');
+          } catch {
+            createdAtFormatted = "Data inválida";
+          }
+        }
         
-        const lastLoginFormatted = user.lastLogin 
-          ? new Date(user.lastLogin).toLocaleDateString('pt-BR') 
-          : "Nunca";
+        let lastLoginFormatted = "Nunca";
+        if (user.lastLogin) {
+          try {
+            lastLoginFormatted = new Date(user.lastLogin).toLocaleDateString('pt-BR');
+          } catch {
+            lastLoginFormatted = "Data inválida";
+          }
+        }
         
+        // Retornar um objeto simples com tipos primitivos
         return {
-          id: user.id || "ID não disponível",
-          name: user.name || "Sem nome",
-          email: user.email || "",
+          id: String(user.id || "ID não disponível"),
+          name: String(user.name || "Sem nome"),
+          email: String(user.email || ""),
           isSuperAdmin: Boolean(user.isSuperAdmin),
           isActive: Boolean(user.isActive),
           createdAt: createdAtFormatted,
@@ -79,11 +102,11 @@ export default async function AdminUsersPage() {
         console.error("Erro ao formatar dados do usuário:", formatError, user);
         // Retornar versão simplificada do usuário em caso de erro
         return {
-          id: user.id || "ID não disponível",
-          name: user.name || "Sem nome",
-          email: user.email || "",
-          isSuperAdmin: Boolean(user.isSuperAdmin),
-          isActive: Boolean(user.isActive),
+          id: String(user.id || "erro-id"),
+          name: "Erro ao formatar dados",
+          email: "Erro ao formatar dados",
+          isSuperAdmin: false,
+          isActive: false,
           createdAt: "Erro de formato",
           lastLogin: "Erro de formato",
         };

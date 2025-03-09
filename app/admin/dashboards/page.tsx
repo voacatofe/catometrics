@@ -22,6 +22,17 @@ function ErrorDisplay({ message }: { message: string }) {
   );
 }
 
+// Interface simples para garantir que todos os dados sejam serializáveis
+interface SafeDashboard {
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  isActive: boolean;
+  createdAt: string;
+  teamName: string;
+}
+
 export default async function AdminDashboardsPage() {
   try {
     // Proteção de rota - apenas superadmin
@@ -59,38 +70,39 @@ export default async function AdminDashboardsPage() {
       return <ErrorDisplay message="Formato de dados inválido retornado pelo banco de dados." />;
     }
 
-    // Preparar dados seguros para renderização, garantindo que todas as propriedades sejam serializáveis
-    const safeDashboards = dashboards.map(dashboard => {
+    // Criar um array de objetos simples e serializáveis
+    const safeDashboards: SafeDashboard[] = dashboards.map(dashboard => {
       try {
-        // Converter a data para string se ela existir, ou usar "N/A" se não existir
-        const formattedDate = dashboard.createdAt 
-          ? new Date(dashboard.createdAt).toLocaleDateString('pt-BR') 
-          : "N/A";
+        // Converter data para string de forma segura
+        let formattedDate = "N/A";
+        if (dashboard.createdAt) {
+          try {
+            formattedDate = new Date(dashboard.createdAt).toLocaleDateString('pt-BR');
+          } catch {
+            formattedDate = "Data inválida";
+          }
+        }
         
-        // Certificar que todos os valores são serializáveis
+        // Certificar que todos os valores são primitivos e serializáveis
         return {
-          id: dashboard.id,
-          name: dashboard.name || "Sem nome",
-          description: dashboard.description || "Sem descrição",
-          url: dashboard.url || "",
+          id: String(dashboard.id || ""),
+          name: String(dashboard.name || "Sem nome"),
+          description: String(dashboard.description || "Sem descrição"),
+          url: String(dashboard.url || ""),
           isActive: Boolean(dashboard.isActive),
           createdAt: formattedDate,
-          team: {
-            name: dashboard.team?.name || "Sem time"
-          }
+          teamName: String(dashboard.team?.name || "Sem time")
         };
       } catch (formatError) {
         console.error("Erro ao formatar dados do dashboard:", formatError, dashboard);
         return {
-          id: dashboard.id,
-          name: dashboard.name || "Sem nome",
+          id: String(dashboard.id || "erro-id"),
+          name: "Erro ao formatar dados",
           description: "Erro ao formatar dados",
           url: "",
           isActive: false,
           createdAt: "Erro de formato",
-          team: {
-            name: "Erro ao formatar dados"
-          }
+          teamName: "Erro ao formatar dados"
         };
       }
     });
@@ -124,7 +136,7 @@ export default async function AdminDashboardsPage() {
                       {safeDashboards.map((dashboard) => (
                         <tr key={dashboard.id} className="border-b hover:bg-gray-50">
                           <td className="p-2 font-medium">{dashboard.name}</td>
-                          <td className="p-2">{dashboard.team.name}</td>
+                          <td className="p-2">{dashboard.teamName}</td>
                           <td className="p-2">
                             {dashboard.isActive ? (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">

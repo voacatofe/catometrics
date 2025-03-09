@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
@@ -30,7 +30,8 @@ const formSchema = z.object({
   }),
 })
 
-export default function LoginPage() {
+// Componente para a parte que usa useSearchParams
+function LoginForm() {
   const router = useRouter()
   const { toast } = useToast()
   const searchParams = useSearchParams()
@@ -102,6 +103,124 @@ export default function LoginPage() {
   }
 
   return (
+    <div className="grid gap-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="email" 
+                    placeholder="nome@empresa.com" 
+                    {...field} 
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Senha</FormLabel>
+                <div className="relative">
+                  <FormControl>
+                    <Input 
+                      type={showPassword ? "text" : "password"} 
+                      placeholder="******" 
+                      {...field} 
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    onClick={togglePasswordVisibility}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    <span className="sr-only">
+                      {showPassword ? "Esconder senha" : "Mostrar senha"}
+                    </span>
+                  </button>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Entrando..." : "Entrar"}
+          </Button>
+        </form>
+      </Form>
+      <div className="text-center text-sm">
+        <Link
+          href="/reset-password"
+          className="underline underline-offset-4 hover:text-primary"
+        >
+          Esqueceu sua senha?
+        </Link>
+      </div>
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">
+            Ou
+          </span>
+        </div>
+      </div>
+      <div className="text-center text-sm">
+        Não tem uma conta?{" "}
+        <Link
+          href="/register"
+          className="underline underline-offset-4 hover:text-primary"
+        >
+          Registre-se
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// Componente de fallback para o Suspense
+function LoginFormFallback() {
+  return (
+    <div className="grid gap-6">
+      <div className="animate-pulse space-y-4">
+        <div className="h-10 rounded bg-gray-200"></div>
+        <div className="h-10 rounded bg-gray-200"></div>
+        <div className="h-10 rounded bg-gray-200"></div>
+      </div>
+      <div className="text-center text-sm animate-pulse">
+        <div className="h-4 w-32 mx-auto rounded bg-gray-200"></div>
+      </div>
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+      </div>
+      <div className="text-center text-sm animate-pulse">
+        <div className="h-4 w-48 mx-auto rounded bg-gray-200"></div>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
       <div className="flex flex-col space-y-2 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">
@@ -112,95 +231,9 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <div className="grid gap-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="email" 
-                      placeholder="nome@empresa.com" 
-                      {...field} 
-                      disabled={isLoading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha</FormLabel>
-                  <div className="relative">
-                    <FormControl>
-                      <Input 
-                        type={showPassword ? "text" : "password"} 
-                        placeholder="******" 
-                        {...field} 
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      onClick={togglePasswordVisibility}
-                      tabIndex={-1}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" aria-hidden="true" />
-                      ) : (
-                        <Eye className="h-4 w-4" aria-hidden="true" />
-                      )}
-                      <span className="sr-only">
-                        {showPassword ? "Esconder senha" : "Mostrar senha"}
-                      </span>
-                    </button>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Entrando..." : "Entrar"}
-            </Button>
-          </form>
-        </Form>
-        <div className="text-center text-sm">
-          <Link
-            href="/reset-password"
-            className="underline underline-offset-4 hover:text-primary"
-          >
-            Esqueceu sua senha?
-          </Link>
-        </div>
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Ou
-            </span>
-          </div>
-        </div>
-        <div className="text-center text-sm">
-          Não tem uma conta?{" "}
-          <Link
-            href="/register"
-            className="underline underline-offset-4 hover:text-primary"
-          >
-            Registre-se
-          </Link>
-        </div>
-      </div>
+      <Suspense fallback={<LoginFormFallback />}>
+        <LoginForm />
+      </Suspense>
     </div>
   )
 } 
